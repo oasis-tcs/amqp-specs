@@ -1,115 +1,188 @@
 # MCP over AMQP 1.0 -- Binding Specification
 
-## Working Draft 01
+## Working Draft
 
-> **Status of this document.** This is an early working draft prepared for discussion with the OASIS AMQP Technical Committee. It is intentionally incomplete: it sketches the core of a binding to establish whether the overall approach is sound before detail is added. It is not for publication or implementation. Many details are deferred to later revisions.
+> **Status of this document.** This is an early working draft prepared for discussion with the OASIS
+> AMQP Technical Committee. It is intentionally incomplete: it sketches the core of a binding to
+> establish whether the overall approach is sound before detail is added. It is not for publication
+> or implementation. Many details are deferred to later revisions.
+>
+> **Revision.** 2026-08-08. Revisions are listed in Appendix B, one line each, and the commit
+> history of this file carries the detail. Working Draft numbering is reserved for drafts submitted
+> for public review.
 
 ## 1  Introduction
 
-The Model Context Protocol (MCP) is an open protocol that connects LLM applications to external tools and data sources. It uses JSON-RPC 2.0 over a stateful connection between a client and a server, with capability negotiation and a defined session lifecycle. MCP currently defines two transports: stdio and Streamable HTTP.
+The Model Context Protocol (MCP) is an open protocol that connects LLM applications to external
+tools and data sources. It uses JSON-RPC 2.0 [JSON-RPC], and as of version 2026-07-28 it is
+stateless: every request carries the protocol version and client capabilities it is made
+under [MCP]. MCP currently defines two transports: stdio and Streamable HTTP.
 
-This document defines a third option: a binding of MCP onto AMQP 1.0. A binding constrains only the application endpoints. It places no requirements on AMQP infrastructure, so any conforming AMQP 1.0 broker or router can carry MCP traffic without modification.
+This document defines a third option: a binding of MCP onto AMQP 1.0 [AMQP-v1.0]. A binding
+constrains only the application endpoints, so any conforming AMQP 1.0 broker or router carries MCP
+traffic as it stands.
 
-MCP's transports today assume a direct, client-initiated connection. AMQP opens MCP to the brokered and routed topologies that production messaging deployments already use, including paths that cross network boundaries and carry many sessions over one connection. MCP's semantics are unchanged; only the carriage is different. AMQP also offers mechanisms such as credit-based flow control and settlement that a later revision can map to MCP's needs; this draft does not yet specify that mapping.
+MCP's transports today assume a direct, client-initiated connection. AMQP opens MCP to the brokered
+and routed topologies that production messaging deployments already use, including paths that cross
+network boundaries and carry many clients over one connection. Statelessness makes those topologies
+a natural fit: any request can be served by any server instance, so a queue with competing consumers
+behind a single address is an ordinary MCP deployment.
 
-This binding is intentionally step one, and it stands on its own. Because MCP carries its own correlation, cancellation, and discovery semantics in-band, today's unmodified AMQP is enough to run it; nothing here depends on future work. Later steps could go further, standardizing the patterns that application protocols over AMQP each tend to reinvent (for example progressive responses, cancellation, and capability discovery) as reusable extensions, and some may warrant changes to AMQP itself. Those are worth pursuing, but they belong to a separate discussion that follows this binding rather than gating it.
+A binding is the right instrument, and [MCP] scopes one the same way: how messages are framed and
+delivered, how request metadata is carried, and how cancellation and termination are signaled.
+MCP's semantics live entirely at its endpoints, in its own correlation (JSON-RPC `id`), its own
+error reporting, and the version and capability context each request carries, so an intermediary
+relays MCP as it would any other payload. The message sections, links, and the `properties` fields
+used for request/reply correlation carry MCP as they stand.
+
+This binding is step one and stands on its own. Later steps could standardize the patterns that
+application protocols over AMQP each tend to reinvent, as reusable extensions, and some may warrant
+changes to AMQP itself. Those belong to a separate discussion that follows this binding.
+
+Deliberately out of scope for this draft: flow control and link credit, settlement policy,
+addressing conventions, error taxonomy, and security beyond the SASL and TLS mechanisms AMQP already
+provides.
 
 ### 1.1  Normative References
 
-- **[AMQP-v1.0]** *OASIS Advanced Message Queuing Protocol (AMQP) Version 1.0*.
-- **[MCP]** *Model Context Protocol Specification*, version 2025-11-25. https://modelcontextprotocol.io
+- **[AMQP-v1.0]** *OASIS Advanced Message Queuing Protocol (AMQP) Version 1.0*. OASIS Standard,
+  29 October 2012.
+- **[MCP]** *Model Context Protocol Specification*, version 2026-07-28.
+  https://modelcontextprotocol.io
 - **[JSON-RPC]** *JSON-RPC 2.0 Specification*. https://www.jsonrpc.org/specification
 
 ## 2  Definitions
 
-- **MCP session** -- The application-level lifecycle between an MCP client and server, from `initialize` through operation to shutdown, as defined in [MCP]. This is distinct from an AMQP session.
-- **AMQP session** -- The transport-level multiplexing unit (a channel pair on an AMQP connection) that carries link traffic, as defined in [AMQP-v1.0].
-- **Request link** -- A unidirectional AMQP link carrying client-to-server traffic: the client's requests and notifications, and its responses to server-initiated requests.
-- **Reply link** -- A unidirectional AMQP link carrying server-to-client traffic: responses, and the server-initiated requests and notifications that MCP permits.
-- **Link pair** -- A request link and a reply link on the same AMQP session, together forming the bidirectional transport for one MCP session.
+- **Request link** -- An AMQP link carrying client-to-server traffic: the client's requests and
+  notifications.
+- **Reply link** -- An AMQP link carrying server-to-client traffic: responses to the client's
+  requests, and the server notifications MCP defines.
+- **Reply address** -- The AMQP address at which a client receives what a server sends back to it,
+  carried in the `reply-to` field of each request.
 
 ## 3  Overview
 
-The premise of this binding is that MCP is a complete application protocol whose semantics live entirely at the endpoints. It defines its own session lifecycle, capability negotiation, message correlation (JSON-RPC `id`), and error reporting. An AMQP broker or router carrying MCP has no reason to inspect method names, capabilities, or session state; it simply delivers messages between endpoints, exactly as it would for any other payload. Where the binding surfaces identifiers such as the method name or the MCP session id into AMQP `properties` and `application-properties`, it does so only to enable optional routing and filtering by intermediaries that choose to use them; acting on these fields is never required, so the no-modification claim holds.
+MCP traffic runs in two directions [MCP]: client-sent requests and notifications to the server,
+and server-sent responses and notifications to the client. A client therefore uses two links:
+a request link on which it sends, and a reply link at which it receives everything the server
+sends back.
 
-For that reason the correct instrument is a binding, not an AMQP extension and not a profile. There is no infrastructure-level behavior to add and no need to subset AMQP: MCP's lifecycle, correlation, and error semantics live in the JSON-RPC body, and the base AMQP primitives (the message sections, unidirectional links, dynamic termini) are enough to carry them. The rest of this document defines how MCP's JSON-RPC messages sit on those primitives.
+One JSON-RPC message maps to exactly one AMQP message, carried unchanged in a single `data` section,
+and the body remains authoritative for method dispatch and correlation. The binding's wire contract
+sits in AMQP `properties`: each request carries a `message-id` and the `reply-to` address at which
+its sender receives replies, and everything answering that request carries `correlation-id` set to
+that `message-id` (§4).
 
-One structural point drives the design. MCP is bidirectional: the client calls the server (tools, resources, prompts), and the server also calls the client (for example sampling, elicitation, and roots). AMQP links are unidirectional, so a single MCP session maps to a pair of links rather than one. This is the main way the binding goes beyond a purely client-initiated protocol.
+Because that contract is per-message, one reply address serves however many requests a client has in
+flight, and any server instance can answer any request. The same two links carry a client attached
+directly to a server and a client attached to a broker or router fronting a queue that many clients
+share and many server instances serve (§5).
+
+A client issues requests as soon as its links are attached, since each request carries the protocol
+version and capabilities it is made under. Detaching, or loss of the connection, ends the
+transport (§5).
 
 ## 4  Message Mapping
 
-One JSON-RPC message maps to exactly one AMQP message. This holds for all three JSON-RPC message types that MCP uses: requests, responses, and notifications.
+One JSON-RPC message, whether request, response, or notification, maps to exactly one AMQP message.
+The JSON-RPC object is carried unchanged in a single `data` section with `content-type` set to
+`application/json`, and the body remains authoritative for method dispatch and correlation.
 
-The JSON-RPC object itself is carried, unchanged, in a single AMQP `data` section with `content-type` set to `application/json`. The binding does not transform, wrap, or re-encode the JSON-RPC body; the body remains authoritative for method dispatch and correlation.
-
-A small number of AMQP `properties` fields carry the routing and correlation information that AMQP infrastructure can act on without parsing the body:
+The request/response contract is the whole of what this binding requires of the wire, and it is
+stated as AMQP `properties` fields, which brokers relay without interpreting:
 
 | Field | Usage |
 |-------|-------|
-| `message-id` | Sender-assigned unique identifier, set on every message. On a request it is derived from the JSON-RPC `id`, so that the AMQP-level and JSON-RPC-level correlation cannot diverge. |
-| `correlation-id` | On a response, the `message-id` of the request being answered. Because a request's `message-id` is derived from its JSON-RPC `id`, this value also equals the `id` the response echoes in its body. Absent on requests and notifications. |
-| `reply-to` | On a request, the address to which the response is to be sent. Absent on notifications and responses. |
+| `message-id` | MUST be set on every request, to a value the client has not used for another request on the same reply address. |
+| `reply-to` | MUST be set on every request, to the reply address at which the client receives what the server sends back. |
+| `correlation-id` | MUST be set on every message a responder sends in answer to a request, to the value of that request's `message-id` as received, unaltered in type or representation. Absent on requests. |
 | `subject` | The JSON-RPC `method` name (for example `tools/call`). Advisory, to allow routing and filtering without body parsing; the body remains authoritative. |
 | `content-type` | `application/json`. |
 
-Deriving a request's `message-id` from its JSON-RPC `id` keeps the two correlation layers in lockstep: an intermediary can correlate on the AMQP `correlation-id` while an endpoint correlates on the JSON-RPC `id`, and the two never disagree. The body remains authoritative; the `properties` fields carry the same correlation into a form infrastructure can act on without decoding it.
+The two correlation layers stay independent -- AMQP's `message-id` and `correlation-id`, and the
+JSON-RPC `id` in the body -- and both are carried end to end.
 
-Two identifiers travel in the `application-properties` section so that intermediaries and endpoints can associate a message with its MCP session without decoding the body:
-
-| Key | Usage |
-|-----|-------|
-| `mcp-session-id` | The MCP session identifier, analogous to the `MCP-Session-Id` header in Streamable HTTP. Established during initialization and present on subsequent messages. |
-| `mcp-protocol-version` | The negotiated MCP protocol version. |
+A client abandons an in-flight request by sending `notifications/cancelled` on its request link,
+referencing the request's JSON-RPC `id`; this is the cancellation pattern [MCP] requires each
+binding to define. A server sends that notification to a client's reply address only to tear down a
+subscription stream (§5), which is the sole purpose [MCP] permits it.
 
 The remaining AMQP sections are unconstrained by this binding.
 
 ## 5  Link Topology
 
-Because AMQP links are unidirectional and MCP is bidirectional, one MCP session uses a **link pair** on a shared AMQP session.
+A client sends on a link targeting the server's request address and receives at its own reply
+address. A queue backing the request address may be shared by many clients and served by many
+server instances: the per-request `reply-to` and `correlation-id` return each response to the
+client that issued it, with no shared state at the intermediary.
 
-In a direct client-server connection, the client attaches both links: a sending link whose target is the server's address (the **request link**), and a receiving link with a dynamic source terminus (the **reply link**). The dynamic flag instructs the peer to allocate a unique address for the reply link; this is the address at which the client receives everything the server sends back. The client also places that address in the `reply-to` field of its `initialize` request so the server learns it directly.
+The reply address is an AMQP address whose format the container determines, and this binding does
+not constrain how a client obtains one. It may be pre-provisioned, or declared by the client over
+whatever management interface the container offers, or allocated by the container as a dynamic
+terminus where one is supported. Containers differ in which of these they offer.
 
-The server sends all of its traffic on the reply link to that dynamic address: responses to client requests, and its own server-initiated requests (for example sampling, elicitation, and roots) and notifications. Server-initiated requests carry `reply-to` set to the server's own request address, and the client answers them on the existing request link. No additional links are created per message or per server request.
+A responder directs each reply to the address in the request's `reply-to`. One reply address serves
+a client for as many requests as it chooses to have in flight, because responses are demultiplexed
+on `correlation-id`.
 
-When a server handles many clients, it sends to each client's distinct reply address. In a brokered topology, the client and server each attach their links to the intermediary rather than to each other, and multiple clients may share a single queue backing the server's request address; the `mcp-session-id` distinguishes which MCP session a given message belongs to.
+This holds where one request yields many messages. A `subscriptions/listen` request receives its
+stream of notifications, and the result that closes the stream, at the same reply address, in the
+order the server sent them.
 
-## 6  Session Lifecycle
+Detaching with the `closed` flag set, or loss of the connection, ends the transport. Requests in
+flight at that point are lost, and the client reissues them under a new JSON-RPC `id`.
 
-MCP's three-phase lifecycle rides on top of AMQP link establishment. The two notions of session remain distinct: AMQP link attach provides transport-level setup, while MCP's `initialize` handshake provides application-level capability negotiation.
+## 6  Conformance
 
-**Initialization.** The client attaches the link pair, then sends the `initialize` request on the request link with its dynamic reply address in `reply-to`. The server replies on the reply link, and the response carries `mcp-session-id` in `application-properties`. The client then sends the `notifications/initialized` notification, and both peers enter the operation phase.
+A **requesting container** conforms to this binding if it sets `reply-to` on every request to an
+address at which it can receive messages, sets `message-id` to a value it has not used for another
+request on that address, and correlates each reply it receives to a request on `correlation-id`.
 
-**Operation.** The peers exchange requests, responses, and notifications per the negotiated capabilities. Every message after initialization carries `mcp-session-id` and `mcp-protocol-version`. AMQP guarantees ordering per link, so a progress notification sent ahead of a response also arrives ahead of it, matching MCP's expectation.
+A **responding container** conforms to this binding if it sets `correlation-id` on every message it
+sends in answer to a request, to that request's `message-id`, and directs each of them to the
+address in the request's `reply-to`.
 
-**Shutdown.** Detaching the link pair with the `closed` flag set terminates the MCP session. A peer that observes its counterpart detach with `closed` set treats the MCP session as ended and releases associated state. A non-closing detach (`closed` unset) suspends the link and does not end the MCP session. Abrupt connection loss is equivalent to session termination.
+Both roles carry each JSON-RPC message unchanged in a single `data` section, as §4 defines,
+and preserve what [MCP] requires of any custom transport: "the JSON-RPC message format,
+the [message patterns], and the per-request metadata model". The connection establishment,
+message framing, and cancellation patterns that [MCP] asks a custom transport to document are
+defined in §4 and §5.
 
 ## Appendix A  Example Exchange (Informative)
 
-A minimal session: link setup, initialize, one tool call with a progress notification, and shutdown. Only the fields relevant to the binding are shown.
+A minimal exchange through an intermediary: link setup and one tool call with a progress
+notification. Addresses are shown as placeholders; their format is container-specific. Only the
+fields relevant to the binding are shown.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
+    participant I as Intermediary
     participant S as Server
 
-    Note over C,S: Link setup (AMQP)
-    C->>S: attach sender (target = mcp-server-addr) -- request link
-    C->>S: attach receiver (dynamic source) -- reply link
-    S-->>C: attach (source = amq/dynamic/xyz)
+    Note over C,S: Link setup
+    C->>I: attach sender, target = request-address
+    C->>I: attach receiver, source = client-reply-address
+    S->>I: attach receiver, source = request-address
+    S->>I: attach sender for replies
 
-    Note over C,S: Initialize
-    C->>S: transfer -- message-id=1, subject=initialize, reply-to=amq/dynamic/xyz<br/>body: id=1, method=initialize
-    S-->>C: transfer -- message-id=r1, correlation-id=1, mcp-session-id=s-abc<br/>body: id=1, result
-    C->>S: transfer -- message-id=n0, subject=notifications/initialized<br/>session=s-abc, ver=2025-11-25
-
-    Note over C,S: Operate -- tool call
-    C->>S: transfer -- message-id=2, subject=tools/call, session=s-abc, ver=2025-11-25<br/>body: id=2, method=tools/call
-    S-->>C: transfer -- message-id=n1, subject=notifications/progress (server notification), session=s-abc, ver=2025-11-25<br/>body: method=notifications/progress
-    S-->>C: transfer -- message-id=r2, correlation-id=2, session=s-abc, ver=2025-11-25<br/>body: id=2, result
-
-    Note over C,S: Shutdown
-    C->>S: detach (closed)
-    S-->>C: detach (closed)
+    Note over C,S: Tool call
+    C->>I: transfer -- message-id=1, subject=tools/call,<br/>reply-to=client-reply-address, body id=1
+    I->>S: transfer, relayed unchanged
+    S-->>I: transfer -- correlation-id=1,<br/>subject=notifications/progress
+    I-->>C: transfer, relayed unchanged
+    S-->>I: transfer -- correlation-id=1, body id=1, result
+    I-->>C: transfer, relayed unchanged
 ```
 
-Client-to-server transfers travel on the request link; server-to-client transfers travel on the reply link at the client's dynamic address.
+The intermediary relays each transfer unchanged. Delete it and the direct case remains, with the
+client's links attached to the server and the same `properties` carrying the exchange.
+
+## Appendix B  Revision History (Informative)
+
+Newest first. One line per revision; the commit history of this file carries the detail.
+
+| Date | Change |
+|------|--------|
+| 2026-08-08 | Track [MCP] 2026-07-28, which makes MCP stateless, and simplify the request/response mechanism to a contract stated in message `properties`. |
+| 2026-07-28 | First draft submitted to the Technical Committee for discussion. |

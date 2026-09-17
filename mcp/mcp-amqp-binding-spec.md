@@ -6,7 +6,7 @@
 > AMQP Technical Committee. It is intentionally incomplete: it sketches the core of a binding, and
 > detail arrives over later revisions. It is not for publication or implementation.
 >
-> **Revision.** 2026-09-01. Revisions are listed in Appendix B, one line each, and the commit
+> **Revision.** 2026-09-17. Revisions are listed in Appendix B, one line each, and the commit
 > history of this file carries the detail. Working Draft numbering is reserved for drafts submitted
 > for public review.
 
@@ -24,8 +24,7 @@ traffic as it stands.
 How a JSON-RPC message is framed on AMQP, and how a request is correlated with the messages that
 answer it, is defined by the binding of JSON-RPC 2.0 onto AMQP 1.0 [JSONRPC-AMQP]. This document
 layers on that binding and defines only what MCP adds to it: the traffic MCP generates in each
-direction, the deployments its statelessness admits, how a request is abandoned, and when the
-transport ends.
+direction, the deployments its statelessness admits, and how a request is abandoned.
 
 MCP's transports today assume a direct, client-initiated connection. AMQP opens MCP to the brokered
 and routed topologies that production messaging deployments already use, including paths that cross
@@ -33,11 +32,10 @@ network boundaries and carry many clients over one connection. Statelessness mak
 a natural fit: any request can be served by any server instance, so a queue with competing consumers
 behind a single address is an ordinary MCP deployment.
 
-A binding is the right instrument, and [MCP] scopes one the same way: how messages are framed and
-delivered, how request metadata is carried, and how cancellation and termination are signaled.
-MCP's semantics live entirely at its endpoints, in its own correlation (JSON-RPC `id`), its own
-error reporting, and the version and capability context each request carries, so an intermediary
-relays MCP as it would any other payload.
+A binding is the right instrument, and [MCP] scopes one the same way: connection establishment,
+message framing, and cancellation. MCP's semantics live entirely at its endpoints, in its own
+correlation (JSON-RPC `id`), its own error reporting, and the version and capability context each
+request carries, so an intermediary relays MCP as it would any other payload.
 
 The patterns that application protocols over AMQP each tend to reinvent are better standardized
 once than restated per protocol, and [JSONRPC-AMQP] does that for message exchange. Further
@@ -64,10 +62,10 @@ This binding coins no terms of its own. Its terms are defined in [JSONRPC-AMQP] 
 
 ## 3  Overview
 
-MCP traffic runs in two directions [MCP]: client-sent requests and notifications to the server,
-and server-sent responses and notifications to the client. A client therefore uses two links:
-a request link on which it sends, and a reply link at which it receives everything the server
-sends back.
+Every MCP interaction begins with the client [MCP]: the client sends requests and notifications, and
+the server answers each request with a response, optionally preceded by notifications scoped to that
+request. A client uses two links: a request link on which it sends, and a reply link at which it
+receives everything the server sends back.
 
 The framing of each JSON-RPC message on AMQP, and the fields that correlate a request with
 everything answering it, are as [JSONRPC-AMQP] defines.
@@ -78,8 +76,8 @@ request. The same two links carry a client attached directly to a server and a c
 intermediary fronting a queue that many clients share and many server instances serve (§5).
 
 A client issues requests as soon as its links are attached, since each request carries the protocol
-version and capabilities it is made under. Detaching, or loss of the connection, ends the
-transport (§5).
+version and capabilities it is made under. Detaching, or loss of the connection, ends the transport
+as [JSONRPC-AMQP] §5 defines.
 
 ## 4  MCP Message Exchange
 
@@ -88,12 +86,11 @@ as [JSONRPC-AMQP] defines. This binding adds no wire fields of its own and leave
 remaining AMQP sections unconstrained.
 
 A client abandons an in-flight request by sending `notifications/cancelled` on its request link,
-referencing the request's JSON-RPC `id`; this is the cancellation pattern [MCP] requires each
-binding to define. A server sends that notification to a client's reply address only to tear down a
-subscription stream (§5), which is the sole purpose [MCP] permits it. Where server instances share
-one request address (§5), [JSONRPC-AMQP] delivers this notification to an arbitrary instance; no
-field of that binding routes it to the instance holding the request. Delivery is therefore
-best-effort; [MCP] specifies the same for cancellation.
+referencing the request's JSON-RPC `id`. A server MUST send that notification to a client's reply
+address when it tears down a subscription stream (§5), and MUST NOT send it for any other purpose.
+Where server instances share one request address (§5), [JSONRPC-AMQP] delivers this notification to
+an arbitrary instance; no field of that binding routes it to the instance holding the request.
+Delivery is therefore best-effort; [MCP] specifies the same for cancellation.
 
 ## 5  Link Topology
 
@@ -102,11 +99,8 @@ address. A queue backing the request address may be shared by many clients and s
 server instances: the per-request correlation [JSONRPC-AMQP] defines returns each response to
 the client that issued it, with no shared state at the intermediary.
 
-A request may be answered by more than one message. A `subscriptions/listen` request receives its
-stream of notifications, and the result that closes the stream, at its reply address.
-
-Detaching with the `closed` flag set, or loss of the connection, ends the transport. Requests in
-flight at that point are lost, and the client reissues them under a new JSON-RPC `id`.
+A request may be answered by more than one message, and every such message arrives at the request's
+reply address.
 
 ## 6  Conformance
 
@@ -118,9 +112,8 @@ A **requesting container** conforms to this binding if it abandons an in-flight 
 sending `notifications/cancelled` as §4 defines.
 
 A **responding container** conforms to this binding if every message it sends in answer to a request
-counts as a response to it for framing and correlation, including each notification of a
-subscription stream and the result that closes the stream, and if it sends `notifications/cancelled`
-to a requesting container only to tear down such a stream.
+counts as a response to it for framing and correlation, and if it sends `notifications/cancelled`
+to a requesting container only to tear down a subscription stream.
 
 The connection establishment and cancellation patterns that [MCP] asks a custom transport to
 document are defined in §4 and §5; message framing is defined by [JSONRPC-AMQP].
@@ -145,7 +138,7 @@ sequenceDiagram
     S->>I: attach sender for replies
 
     Note over C,S: Tool call
-    C->>I: transfer -- tools/call, body id=1
+    C->>I: transfer -- tools/call with progressToken, body id=1
     I->>S: transfer, relayed unchanged
     S-->>I: transfer -- notifications/progress, answering body id=1
     I-->>C: transfer, relayed unchanged
@@ -162,6 +155,7 @@ Newest first. One line per revision; the commit history of this file carries the
 
 | Date | Change |
 |------|--------|
+| 2026-09-17 | Correct statements about [MCP] that the specification does not support: stop restating the subscription stream in §5 and §6, which required at MUST level a closing result [MCP] makes a SHOULD; leave transport termination to [JSONRPC-AMQP], whose §5 it contradicted; state what [MCP] asks a custom transport to document, and the obligation on a server tearing down a stream; and ground §3's two-link model on [MCP]'s interaction rule. |
 | 2026-09-01 | Cite [JSONRPC-AMQP] as a normative reference and replace every bare mention of it with the citation anchor, so conformance to this document names the base contract it is defined against. |
 | 2026-08-24 | Layer on the separate binding of JSON-RPC 2.0 onto AMQP 1.0: remove the message framing and request/response correlation this document previously defined, leaving only what MCP adds. Drop the end-to-end ordering claim from the subscription stream. |
 | 2026-08-08 | Track [MCP] 2026-07-28, which makes MCP stateless, and simplify the request/response mechanism to a contract stated in message `properties`. |

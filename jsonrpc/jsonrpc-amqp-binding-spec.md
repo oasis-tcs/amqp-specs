@@ -6,7 +6,7 @@
 > AMQP Technical Committee. It is incomplete: it sketches the core of a binding; detail arrives over
 > later revisions. It is not for publication or implementation.
 >
-> **Revision.** 2026-08-24. Revisions are listed in Appendix C, one line each, and the commit
+> **Revision.** 2026-09-17. Revisions are listed in Appendix C, one line each, and the commit
 > history of this file carries the detail. Working Draft numbering is reserved for drafts submitted
 > for public review.
 
@@ -44,8 +44,8 @@ records both as open.
 
 ## 2  Definitions
 
-- **JSON-RPC message** -- Any one of the four things [JSON-RPC] puts on the wire: a request object,
-  a notification, a response object, or a batch of any of these.
+- **JSON-RPC message** -- Any one of the three forms [JSON-RPC] puts on the wire: a request object,
+  a response object, or a batch of either.
 - **Requester** -- The container that sends a request or a notification. The Client of [JSON-RPC].
 - **Responder** -- The container that answers a request. The Server of [JSON-RPC]. A container may
   be a requester for some requests and a responder for others; the roles attach to a request, not
@@ -60,12 +60,13 @@ records both as open.
 ## 3  Overview
 
 JSON-RPC traffic runs in two directions. Requests and notifications from the requester travel on a
-request link to the responder. Responses and notifications from the responder travel on a reply
-link to the requester. One JSON-RPC message maps to exactly one AMQP message, including batches. The
-contract that correlates a request with what answers it travels in AMQP `properties` on each message
-(§4.2). One reply address serves however many requests a requester has in flight, and the same two
-links serve a requester attached directly to a responder and one attached to an intermediary where
-many requesters share a request address (§5).
+request link to the responder. Responses and notifications from the responder travel on a reply link
+to the requester. A container in both roles keeps its links in each role independent of its links in
+the other. One JSON-RPC message maps to exactly one AMQP message, including batches. The contract
+that correlates a request with what answers it travels in AMQP `properties` on each message (§4.2).
+One reply address serves however many requests a requester has in flight, and the same two links
+serve a requester attached directly to a responder and one attached to an intermediary where many
+requesters share a request address (§5).
 
 ## 4  Message Mapping
 
@@ -75,8 +76,8 @@ One JSON-RPC message maps to exactly one AMQP message. The JSON-RPC object, or a
 a batch, is carried unchanged in a single `data` section with `content-type` set to
 `application/json`, and the body remains authoritative for method dispatch and correlation.
 
-The binding carries the JSON text octet for octet as [JSON-RPC] and [RFC8259] define it. Every field
-the binding adds lives in an AMQP section.
+The binding carries the JSON text octet for octet, and that text MUST be encoded using UTF-8
+[RFC8259]. Every field the binding adds lives in an AMQP section.
 
 ### 4.2  Properties
 
@@ -87,21 +88,17 @@ intermediaries relay without interpreting:
 |-------|-------|
 | `message-id` | MUST be set on every message, to a globally unique value the requester has not used before. |
 | `reply-to` | MUST be set on every request, to the reply address to which the responder sends what answers the request. MUST NOT be set on a notification. |
-| `correlation-id` | MUST be set on every message a responder sends in answer to a request, to the value of that request's `message-id` as received, unaltered in type or representation. Absent on requests and notifications. A response whose request `id` could not be determined carries `id: null` in the body and still correlates here. |
-| `subject` | The JSON-RPC `method` name of the message it accompanies. Where set, it MUST equal the method defined in the body, so an intermediary MAY route and filter on it. |
-| `content-type` | `application/json;charset=utf-8` |
+| `correlation-id` | MUST be set on every message a responder sends in answer to a request, to the value of that request's `message-id` as received, unaltered in type or representation. Absent on requests and on requester-sent notifications. A response whose request `id` could not be determined carries `id: null` in the body and still correlates here. |
+| `subject` | The JSON-RPC `method` name of the message it accompanies. Where set, it MUST equal the method defined in the body, so an intermediary MAY route and filter on it. Absent on a response. |
+| `content-type` | `application/json` |
 
-A responder cannot recover a request's `message-id` or `reply-to` from what it sends, so it MUST
-retain both for as long as it may still send a message in answer to that request. It MUST take the
-`correlation-id` and the destination of each such message from what it retained. The association
-lives only in these retained values: a notification a responder sends in answer to a request carries
-no body `id` (§4.3), and a body `id` is unique only within one requester's session, so it cannot
-identify a request among requesters that share a request address (§5).
+A responder MUST retain each request's `message-id` and `reply-to` for as long as it may still
+send a message in answer to that request, and MUST take the `correlation-id` and the destination of
+each such message from what it retained.
 
-A requester reads whether a message completes a request from the body, since this binding adds no
-AMQP field for terminality. Where an application protocol answers one request with several messages,
-a response carries `result` or `error` and the request's `id`, while an intermediate notification
-carries `method` and no `id`.
+A requester reads whether a message completes a request from the body. Where an application protocol
+answers one request with several messages, a response carries `result` or `error` and the request's
+`id`, while an intermediate notification carries `method` and no `id`.
 
 ### 4.3  Notifications
 
@@ -111,26 +108,25 @@ notification; the absent body `id` marks it, consistent with the body remaining 
 (§4.1). A responder that cannot process a notification stays silent, since [JSON-RPC] defines no
 response for one.
 
-An application protocol may define notifications a responder sends to a requester. Those travel on
+An application protocol MAY define notifications a responder sends to a requester. Those travel on
 the reply link to the reply address of the request they relate to, carrying `correlation-id` per
-§4.2. A notification relating to no request reaches the requester only through a reply address the
-application protocol arranges, and the protocol defines how the requester supplies it.
+§4.2.
 
 ### 4.4  Batches
 
 [JSON-RPC] §6 lets a requester send an Array of request objects and have the responder return an
 Array of the corresponding response objects. A batch is one JSON-RPC message, so it is one AMQP
 message: the Array is the body, and `message-id` and `reply-to` are set as for a single request. The
-response Array likewise travels as one AMQP message carrying `correlation-id`. Splitting a batch
-across AMQP messages would lose the grouping [JSON-RPC] defines it to have.
+response Array likewise travels as one AMQP message carrying `correlation-id`. Within a batch, a
+requester matches each response object to its request by the body `id`.
 
 `subject` is absent on a batch, which has no single method, so an intermediary routing on `subject`
 cannot route one; a requester that needs such routing sends its requests individually.
 
-Where every member of a batch is a notification, [JSON-RPC] forbids an empty Array in reply: the
-responder sends no AMQP message and the requester MUST NOT wait for one, and such a batch is a
-notification for the purposes of §4.3. Where the batch is an Array with no members, [JSON-RPC]
-requires a single response object, which travels as one AMQP message carrying `correlation-id`.
+Where every member of a batch is a notification, [JSON-RPC] forbids an empty Array in reply. A
+responder MUST NOT send an AMQP message in that case, and such a batch is a notification for the
+purposes of §4.3. Where the batch is an Array with no members, [JSON-RPC] requires a single response
+object, which travels as one AMQP message carrying `correlation-id`.
 Where a batch mixes requests and notifications, the response Array holds an entry per request and
 none per notification, still as one AMQP message.
 
@@ -141,10 +137,10 @@ carried as one AMQP message with `correlation-id` set from the request's `messag
 its `reply-to`. An unparseable request that carried neither gives the responder nothing to correlate
 or address a response with, so it settles the delivery and sends nothing.
 
-A message larger than the `max-message-size` the peer declared at attach cannot be sent. The layer
-that assembled a batch MAY instead issue its members as individual messages, each its own AMQP
-message under its own `message-id`, since splitting the batch itself would lose the grouping §4.4
-preserves. A single oversize request or notification has no such recourse: it is one JSON-RPC
+An attempt to deliver a message larger than the `max-message-size` the peer declared at attach
+results in an `amqp:link:message-size-exceeded` link error. The layer that assembled a batch MAY
+instead issue its members as individual messages, each its own AMQP message under its own
+`message-id`. A single oversize request or notification has no such recourse: it is one JSON-RPC
 message (§4.1) and cannot be divided.
 
 ## 5  Addressing and Topology
@@ -172,17 +168,12 @@ constrain.
 
 ## 6  Delivery
 
-**Duplicates.** [JSON-RPC] does not define idempotency or deduplication. `message-id` (§4.2) is the
-mechanism available to an application protocol that needs to recognize a redelivered or reissued
-request; a requester that wants that recognition reuses the original `message-id` rather than
-minting a fresh one.
+**Duplicates.** [JSON-RPC] does not define idempotency or deduplication. An application protocol
+that needs to recognize a redelivered request SHOULD check for a repeated `message-id` (§4.2).
 
-**Ordering.** [AMQP-v1.0] preserves order only on a single link; order across two links is
-undefined, and what an intermediary preserves beyond one hop is that intermediary's property. Where
-an application protocol answers one request with several messages (§4.2), a responder controls only
-the order in which it sends them, so a protocol that needs its answers ordered end to end either
-confines them to one link with no reordering intermediary, or carries its own sequencing for the
-requester to reorder on.
+**Ordering.** [AMQP-v1.0] guarantees order between the two endpoints of a link. What an intermediary
+preserves beyond one hop is that intermediary's property. Where an application protocol answers one
+request with several messages (§4.2), a responder controls only the order in which it sends them.
 
 ## 7  Application Protocols
 
@@ -193,10 +184,10 @@ intermediaries can route, filter, and meter without decoding it.
 Cancellation, where an application protocol defines one, rides as an ordinary notification on the
 request link naming the request to abandon (§4.3); this binding attaches no meaning to it. It is
 instance-affine where the rest of this binding is not: a notification sent to a request address
-that many instances serve reaches an arbitrary one, and `correlation-id` is absent on notifications
-(§4.2), so no field of this binding routes it to the instance holding the request. An application
-protocol that needs stronger delivery than best-effort supplies its own affinity mechanism;
-Appendix B records the question.
+that many instances serve reaches an arbitrary one, and `correlation-id` is absent on a
+requester-sent notification (§4.2), so no field of this binding routes it to the instance holding
+the request. An application protocol that needs stronger delivery than best-effort supplies its own
+affinity mechanism; Appendix B records the question.
 
 ## 8  Security Considerations
 
@@ -229,16 +220,14 @@ forged value; an authorization decision MUST NOT be taken on `subject`. The same
 A **requesting container** conforms to this binding if it:
 
 1. sets `message-id` and `reply-to` on every request as §4.2 requires;
-2. sets `subject`, where set, as §4.2 and §4.4 require;
-3. correlates each reply it receives to a request by `correlation-id`;
-4. expects no reply to a notification, per §4.3.
+2. correlates each reply it receives to a request by `correlation-id`;
+3. expects no reply to a notification, per §4.3.
 
 A **responding container** conforms to this binding if it:
 
 1. sets `correlation-id` on every message it sends in answer to a request, as §4.2 requires;
 2. sends nothing in answer to a notification or to an all-notification batch, per §4.3 and §4.4;
-3. dispatches on the `method` in the body, never on `subject`;
-4. omits `subject` from every response and every batch it sends, as §4.2 and §4.4 require.
+3. omits `subject` from every response and every batch it sends, as §4.2 and §4.4 require.
 
 Both roles carry the body and batches as §4.1 and §4.4 require, and preserve [JSON-RPC] semantics
 end to end, with one departure: a request may be answered by more than one message where an
@@ -291,8 +280,8 @@ Recorded for Technical Committee discussion.
 
 | Question | Detail |
 |----------|--------|
-| Body section type | §4.1 requires a `data` section carrying `content-type: application/json`. Review raised two alternatives. An `amqp-value` holding a string also constrains the body to UTF-8 and carries the JSON octets unchanged, differing from `data` only in section type; on this reading the choice is which section a requester reaches for by default, and if `data` is kept its `content-type` ought to state the charset (`application/json;charset=utf-8`). An `amqp-value` holding a map is more compact, and most AMQP client libraries encode a JSON object into one without the application asking, but it loses fidelity: the round trip through AMQP types does not distinguish an omitted `params` member from a null one, nor an absent `id` from `id: null`, which is the distinction between a request and a notification, and JSON numbers admit more than one AMQP numeric type. Permitting more than one representation requires naming which is canonical for interoperation, saying what a responder does with one it did not expect, and stating what `content-type`, if any, accompanies each. |
-| Batching model | §4.4 carries a batch as one AMQP message to preserve the grouping [JSON-RPC] defines. Review noted that AMQP transfers many messages in rapid succession and settles them asynchronously, so a binding could instead decompose a batch into its member messages and not carry the batch form on the wire at all. That trades the batch grouping and the single batched response for per-message settlement and routing, and changes how an all-notification batch, a batch-level parse error, and an oversize batch (§4.5) are represented. Whether to keep the batch as one message or decompose it is open. |
+| Body section type | §4.1 requires a `data` section carrying `content-type: application/json`. Review raised two alternatives. An `amqp-value` holding a string also constrains the body to UTF-8 and carries the JSON octets unchanged, differing from `data` only in section type; on this reading the choice is which section a requester reaches for by default. An `amqp-value` holding a map is more compact, and most AMQP client libraries encode a JSON object into one without the application asking, but it loses fidelity: the round trip through AMQP types does not distinguish an omitted `params` member from a null one, nor an absent `id` from `id: null`, which is the distinction between a request and a notification, and JSON numbers admit more than one AMQP numeric type. Permitting more than one representation requires naming which is canonical for interoperation, saying what a responder does with one it did not expect, and stating what `content-type`, if any, accompanies each. |
+| Batching model | §4.4 carries a batch as one AMQP message to preserve the semantics [JSON-RPC] gives the batch as a whole. Review noted that AMQP transfers many messages in rapid succession and settles them asynchronously, so a binding could instead decompose a batch into its member messages and not carry the batch form on the wire at all. That trades those semantics and the single batched response for per-message settlement and routing, and changes how an all-notification batch, a batch-level parse error, and an oversize batch (§4.5) are represented. Whether to keep the batch as one message or decompose it is open. |
 | Exactly-once effects | §6 supplies `message-id` as a deduplication key but requires nothing of a responder. Whether the binding should require duplicate suppression is open, as is whether AMQP settlement state can carry more of the weight than this draft assumes. Since a `message-id` is never reused, the open quantity is how long a responder must remember one to recognize a redelivery. |
 | Failure signalling | A JSON-RPC error is a response and travels as one, which keeps the taxonomy in [JSON-RPC]. Open: whether a `rejected` or `released` disposition should surface to the requester as a synthesized JSON-RPC error, and with what code from the -32000 to -32099 implementation-defined band; and whether the binding should say anything about how long a requester waits for a response that never arrives, which §1 currently leaves to the application protocol. |
 | Cancellation affinity | §7 leaves cancellation best-effort where a request address is served by many responder instances, since no field of this binding routes a notification to the instance holding the request. Whether the binding should supply an affinity mechanism, or an address a responder publishes for messages concerning a request in progress, is open. |
@@ -306,4 +295,5 @@ Newest first. One line per revision; the commit history of this file carries the
 
 | Date | Change |
 |------|--------|
+| 2026-09-17 | Correct statements attributed to [JSON-RPC], [AMQP-v1.0] and [RFC8259] that those specifications do not make; resolve the contradictions on `message-id` reuse and on `correlation-id` presence; require UTF-8 in §4.1 rather than through a `content-type` parameter [RFC8259] declines to define; and remove justification from the normative sections. |
 | 2026-08-24 | First draft submitted to the Technical Committee for discussion, following the 2026-08-11 meeting's agreement to propose a JSON-RPC binding with [MCP-AMQP] as an application of it. |

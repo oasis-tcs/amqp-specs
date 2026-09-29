@@ -6,7 +6,7 @@
 > AMQP Technical Committee. It is incomplete: it sketches the core of a binding; detail arrives over
 > later revisions. It is not for publication or implementation.
 >
-> **Revision.** 2026-09-17. Revisions are listed in Appendix C, one line each, and the commit
+> **Revision.** 2026-09-25. Revisions are listed in Appendix C, one line each, and the commit
 > history of this file carries the detail. Working Draft numbering is reserved for drafts submitted
 > for public review.
 
@@ -39,6 +39,9 @@ records both as open.
 
 ### 1.2  Non-Normative References
 
+- **[AMQP-JMS-MAP]** *AMQP Bindings and Mappings for JMS Version 1.0*. OASIS AMQP Technical
+  Committee, Working Draft 10, 21 August 2020.
+  <https://groups.oasis-open.org/higherlogic/ws/public/download/67638/amqp-bindmap-jms-v1.0-wd10.pdf>
 - **[MCP-AMQP]** *MCP over AMQP 1.0 -- Binding Specification*. OASIS AMQP Technical Committee,
   working draft.
 
@@ -165,6 +168,46 @@ for a requester that attaches again. A request whose transfer did not complete n
 responder, so reissuing it is a new request rather than the duplicate §6 describes. Which case
 applies depends on the nodes backing the two addresses, whose durability this binding does not
 constrain.
+
+### 5.1  Temporary Reply Nodes
+
+This subsection is non-normative.
+
+Where a peer supports receiver-created dynamic sources, a requester can allocate a temporary reply
+queue by attaching its reply receiver with an addressless source whose `dynamic` field is `true`.
+The temporary-queue profile in [AMQP-JMS-MAP] supplies the `temporary-queue` capability and a
+`lifetime-policy` of `delete-on-close`. The example requests `durable=none` and
+`expiry-policy=link-detach`; the peer's attach response determines the node's actual properties.
+
+```amqp
+attach(
+  name={unique reply-link name},
+  role=receiver,
+  source={
+    durable=none,
+    expiry-policy=link-detach,
+    dynamic=true,
+    dynamic-node-properties={
+      :"lifetime-policy"=delete-on-close
+    },
+    capabilities=[temporary-queue]
+  },
+  target=null
+)
+```
+
+On success, the peer's attach response has a source containing the assigned address. The requester
+uses that address opaquely: once its receiver is attached and credited, it sets the request's AMQP
+`reply-to` to the address. The responder attaches a sender to that address and sets the reply's
+`correlation-id` from the request's `message-id` (§4.2). The requester receives and settles replies
+on the same link that requested the dynamic source. No second receiver or creating sender link is
+needed.
+
+A peer may refuse dynamic source creation or return no usable source address. The requester then
+needs another reply-address arrangement before sending requests. It must not assume that an address
+assigned to a temporary node survives the reply link's closure or a connection interruption. Even
+when the requested lifetime policy is honored, replies sent after the node is deleted cannot reach
+the requester through that address.
 
 ## 6  Delivery
 
@@ -295,5 +338,6 @@ Newest first. One line per revision; the commit history of this file carries the
 
 | Date | Change |
 |------|--------|
+| 2026-09-25 | Add non-normative guidance for receiver-created temporary queue reply nodes. |
 | 2026-09-17 | Correct statements attributed to [JSON-RPC], [AMQP-v1.0] and [RFC8259] that those specifications do not make; resolve the contradictions on `message-id` reuse and on `correlation-id` presence; require UTF-8 in §4.1 rather than through a `content-type` parameter [RFC8259] declines to define; and remove justification from the normative sections. |
 | 2026-08-24 | First draft submitted to the Technical Committee for discussion, following the 2026-08-11 meeting's agreement to propose a JSON-RPC binding with [MCP-AMQP] as an application of it. |

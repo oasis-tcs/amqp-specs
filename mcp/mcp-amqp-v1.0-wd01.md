@@ -39,8 +39,8 @@ Not yet published. Proposed latest-stage locations, subject to OASIS confirmatio
 
 ### Editors
 
-- Stefan Moser, AWS
-- Vignesh Selvam, AWS
+- Stefan Moser (<stefamos@amazon.com>), AWS
+- Vignesh Selvam (<vigselvm@amazon.com>), AWS
 
 ### Abstract
 
@@ -337,8 +337,8 @@ provide context and are not required to implement this binding.
   [Online]. Available: <https://www.jsonrpc.org/specification>.
 - **[JSONRPC-AMQP]** *JSON-RPC 2.0 over AMQP 1.0 -- Binding Specification Version 1.0*, OASIS
   Advanced Message Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026, repository
-  commit `708359c624f0ccfc5f0cbd4f8bedd088e6eadf85`. [Online]. Available:
-  <https://github.com/oasis-tcs/amqp-specs/blob/708359c624f0ccfc5f0cbd4f8bedd088e6eadf85/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
+  commit `bc6d6fd6dfd7c764fd79dac9833e26489135ae8b`. [Online]. Available:
+  <https://github.com/oasis-tcs/amqp-specs/blob/bc6d6fd6dfd7c764fd79dac9833e26489135ae8b/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
 - **[RFC2119]** S. Bradner, *Key Words for Use in RFCs to Indicate Requirement Levels*, BCP 14,
   RFC 2119, March 1997. [Online]. Available: <https://www.rfc-editor.org/info/rfc2119>.
 - **[RFC8174]** B. Leiba, *Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words*, BCP 14,

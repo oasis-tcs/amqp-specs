@@ -39,8 +39,8 @@ Not yet published. Proposed latest-stage locations, subject to OASIS confirmatio
 
 ### Editors
 
-- Stefan Moser, AWS
-- Vignesh Selvam, AWS
+- Stefan Moser (<stefamos@amazon.com>), AWS
+- Vignesh Selvam (<vigselvm@amazon.com>), AWS
 
 ### Abstract
 

@@ -10,7 +10,7 @@ The purpose of this repository is support development of OASIS AMQP TC specifica
 
 ### Contributions
 
-As stated in this repository's [CONTRIBUTING](https://github.com/oasis-tcs/amqp-specs/blob/master/CONTRIBUTING.md) file, contributors to this repository are expected to be Members of the OASIS AMQP TC for any substantive change requests.  Anyone wishing to contribute to this GitHub project and [participate](https://www.oasis-open.org/join/participation-instructions) in the TC's technical activity is invited to join as an OASIS TC Member.  Public feedback is also accepted, subject to the terms of the [OASIS Feedback License](https://www.oasis-open.org/policies-guidelines/ipr#appendixa).
+As stated in this repository's [CONTRIBUTING](https://github.com/oasis-tcs/amqp-specs/blob/master/CONTRIBUTING.md) file, contributors to this repository are expected to be Members of the OASIS AMQP TC for any substantive change requests. Anyone wishing to contribute to this GitHub project and [participate](https://www.oasis-open.org/join/participation-instructions) in the TC's technical activity is invited to join as an OASIS TC Member. Public comments from non-members are accepted by posting to the [AMQP comment list](https://groups.oasis-open.org/communities/community-home?CommunityKey=f83ec4e4-c2ad-4e1f-b9d2-018f5aa7a390), as described in the [CONTRIBUTING](https://github.com/oasis-tcs/amqp-specs/blob/master/CONTRIBUTING.md) file and subject to the terms of the [OASIS Feedback License](https://www.oasis-open.org/policies-guidelines/ipr#appendixa).
 
 ### Licensing
 

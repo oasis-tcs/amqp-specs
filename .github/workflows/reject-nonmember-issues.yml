@@ -1,0 +1,47 @@
+name: Enforce AMQP issue policy
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  reject-nonmembers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Redirect non-member comments and close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          IS_PULL_REQUEST: ${{ github.event.issue.pull_request != null }}
+          REJECTION_MESSAGE: |
+            Thanks for taking the time to raise this.
+
+            AMQP accepts public comments through the OASIS comment list, not GitHub. Posting there places your comment under the OASIS Feedback License and ensures the TC can see and consider it.
+
+            Please post your comment to the [AMQP comment list](https://groups.oasis-open.org/communities/community-home?CommunityKey=f83ec4e4-c2ad-4e1f-b9d2-018f5aa7a390). A free OASIS account is required to post. You can [create an account](https://www.oasis-open.org/comment-signup/?tc=amqp).
+
+            GitHub issues and pull requests are not used for public comments.
+        run: |
+          if [[ "$IS_PULL_REQUEST" == "true" || "$ACTOR" == "github-actions[bot]" ]]; then
+            exit 0
+          fi
+
+          if grep -iqFqx -- "$ACTOR" tc/members.txt; then
+            exit 0
+          fi
+
+          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" \
+            --field body="$REJECTION_MESSAGE"
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" \
+            --field state=closed \
+            --field state_reason=not_planned

@@ -39,7 +39,8 @@ Not yet published. Proposed latest-stage locations, subject to OASIS confirmatio
 
 ### Editors
 
-Editor designation is pending confirmation by the Technical Committee.
+- Stefan Moser, AWS
+- Vignesh Selvam, AWS
 
 ### Abstract
 
@@ -265,7 +266,7 @@ A Server conforms to this binding if it:
 
 This document was last revised by the OASIS Advanced Message Queuing Protocol (AMQP) TC on the
 above date. It is a Working Draft and has not been approved as a Committee Specification Draft.
-The editor designation, product registration, publication URIs, and authoritative format remain
+The product registration, publication URIs, and authoritative format remain
 subject to TC and OASIS Administration confirmation. Other technical work produced by the TC is
 listed at <https://www.oasis-open.org/committees/amqp/>.
 
@@ -336,8 +337,8 @@ provide context and are not required to implement this binding.
   [Online]. Available: <https://www.jsonrpc.org/specification>.
 - **[JSONRPC-AMQP]** *JSON-RPC 2.0 over AMQP 1.0 -- Binding Specification Version 1.0*, OASIS
   Advanced Message Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026, repository
-  commit `6d5ee0e77062546126d93b189a489355c18b281f`. [Online]. Available:
-  <https://github.com/oasis-tcs/amqp-specs/blob/6d5ee0e77062546126d93b189a489355c18b281f/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
+  commit `708359c624f0ccfc5f0cbd4f8bedd088e6eadf85`. [Online]. Available:
+  <https://github.com/oasis-tcs/amqp-specs/blob/708359c624f0ccfc5f0cbd4f8bedd088e6eadf85/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
 - **[RFC2119]** S. Bradner, *Key Words for Use in RFCs to Indicate Requirement Levels*, BCP 14,
   RFC 2119, March 1997. [Online]. Available: <https://www.rfc-editor.org/info/rfc2119>.
 - **[RFC8174]** B. Leiba, *Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words*, BCP 14,

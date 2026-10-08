@@ -34,7 +34,7 @@ Not yet published. Proposed latest-stage locations, subject to OASIS confirmatio
 
 ### Chairs
 
-- Rob Godfrey, IBM
+- Rob Godfrey (<rgodfrey1@ibm.com>), IBM
 - Clemens Vasters (<clemensv@microsoft.com>), Microsoft
 
 ### Editors

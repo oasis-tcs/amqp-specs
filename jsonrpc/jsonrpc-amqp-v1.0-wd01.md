@@ -39,7 +39,8 @@ Not yet published. Proposed latest-stage locations, subject to OASIS confirmatio
 
 ### Editors
 
-Editor designation is pending confirmation by the Technical Committee.
+- Stefan Moser, AWS
+- Vignesh Selvam, AWS
 
 ### Abstract
 
@@ -371,7 +372,7 @@ to answer every request; §1 leaves how a requester learns of that out of scope.
 
 This document was last revised by the OASIS Advanced Message Queuing Protocol (AMQP) TC on the
 above date. It is a Working Draft and has not been approved as a Committee Specification Draft.
-The editor designation, product registration, publication URIs, and authoritative format remain
+The product registration, publication URIs, and authoritative format remain
 subject to TC and OASIS Administration confirmation. Other technical work produced by the TC is
 listed at <https://www.oasis-open.org/committees/amqp/>.
 

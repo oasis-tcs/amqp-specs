@@ -23,8 +23,7 @@ It is not in scope for this specification to define how a requester and a respon
 credit, what address forms they use beyond the citation in §5, or any security mechanism beyond the
 SASL and TLS mechanisms AMQP already provides. Settlement policy is left to the peers, with §6
 supplying `message-id` as a deduplication key. It does not define how a requester learns that a
-request went unanswered, or how long it waits before concluding one will not arrive; Appendix B
-records both as open.
+request went unanswered; Appendix B records this as open.
 
 ### 1.1  Normative References
 
@@ -175,21 +174,27 @@ that needs to recognize a redelivered request SHOULD check for a repeated `messa
 preserves beyond one hop is that intermediary's property. Where an application protocol answers one
 request with several messages (§4.2), a responder controls only the order in which it sends them.
 
-## 7  Application Protocols
+## 7  Cancellation
+
+A requester MUST limit how long it waits for the response to every request that it sends. If a
+responder learns that it cannot deliver to a request's reply address, it SHOULD stop processing the
+request.
+
+Where an application protocol defines cancellation, a requester cancels a request by sending a
+notification on the request link that names the request (§4.3). This binding does not attach a
+meaning to the notification. When many responder instances serve a request address, the
+notification may reach an instance other than the one processing the request, because a
+requester-sent notification does not carry a `correlation-id` (§4.2). Cancellation is therefore
+best-effort. An application protocol that needs stronger delivery supplies its own affinity
+mechanism; Appendix B records the question.
+
+## 8  Application Protocols
 
 An application protocol adds its own routing metadata as `application-properties` keys. Such keys
 are advisory: an endpoint reads the JSON-RPC body as authoritative, and the keys exist so
 intermediaries can route, filter, and meter without decoding it.
 
-Cancellation, where an application protocol defines one, rides as an ordinary notification on the
-request link naming the request to abandon (§4.3); this binding attaches no meaning to it. It is
-instance-affine where the rest of this binding is not: a notification sent to a request address
-that many instances serve reaches an arbitrary one, and `correlation-id` is absent on a
-requester-sent notification (§4.2), so no field of this binding routes it to the instance holding
-the request. An application protocol that needs stronger delivery than best-effort supplies its own
-affinity mechanism; Appendix B records the question.
-
-## 8  Security Considerations
+## 9  Security Considerations
 
 A request carries a `reply-to` address the requester chose and the responder is asked to send to.
 Two things must hold: the responder's right to send there, and the requester's entitlement to
@@ -213,15 +218,16 @@ not carry to another. Appendix B records the cross-address-space case as open.
 accompanies, but it is sender-supplied, and an intermediary cannot detect a divergence from the body
 without the parse `subject` exists to avoid. Routing, filtering, and metering are unaffected by a
 forged value; an authorization decision MUST NOT be taken on `subject`. The same holds for the
-`application-properties` keys §7 admits.
+`application-properties` keys §8 admits.
 
-## 9  Conformance
+## 10  Conformance
 
 A **requesting container** conforms to this binding if it:
 
 1. sets `message-id` and `reply-to` on every request as §4.2 requires;
 2. correlates each reply it receives to a request by `correlation-id`;
-3. expects no reply to a notification, per §4.3.
+3. expects no reply to a notification, per §4.3;
+4. limits how long it waits for the response to every request, per §7.
 
 A **responding container** conforms to this binding if it:
 
@@ -283,10 +289,10 @@ Recorded for Technical Committee discussion.
 | Body section type | §4.1 requires a `data` section carrying `content-type: application/json`. Review raised two alternatives. An `amqp-value` holding a string also constrains the body to UTF-8 and carries the JSON octets unchanged, differing from `data` only in section type; on this reading the choice is which section a requester reaches for by default. An `amqp-value` holding a map is more compact, and most AMQP client libraries encode a JSON object into one without the application asking, but it loses fidelity: the round trip through AMQP types does not distinguish an omitted `params` member from a null one, nor an absent `id` from `id: null`, which is the distinction between a request and a notification, and JSON numbers admit more than one AMQP numeric type. Permitting more than one representation requires naming which is canonical for interoperation, saying what a responder does with one it did not expect, and stating what `content-type`, if any, accompanies each. |
 | Batching model | §4.4 carries a batch as one AMQP message to preserve the semantics [JSON-RPC] gives the batch as a whole. Review noted that AMQP transfers many messages in rapid succession and settles them asynchronously, so a binding could instead decompose a batch into its member messages and not carry the batch form on the wire at all. That trades those semantics and the single batched response for per-message settlement and routing, and changes how an all-notification batch, a batch-level parse error, and an oversize batch (§4.5) are represented. Whether to keep the batch as one message or decompose it is open. |
 | Exactly-once effects | §6 supplies `message-id` as a deduplication key but requires nothing of a responder. Whether the binding should require duplicate suppression is open, as is whether AMQP settlement state can carry more of the weight than this draft assumes. Since a `message-id` is never reused, the open quantity is how long a responder must remember one to recognize a redelivery. |
-| Failure signalling | A JSON-RPC error is a response and travels as one, which keeps the taxonomy in [JSON-RPC]. Open: whether a `rejected` or `released` disposition should surface to the requester as a synthesized JSON-RPC error, and with what code from the -32000 to -32099 implementation-defined band; and whether the binding should say anything about how long a requester waits for a response that never arrives, which §1 currently leaves to the application protocol. |
+| Failure signalling | A JSON-RPC error is a response and travels as one, which keeps the taxonomy in [JSON-RPC]. Open: whether a `rejected` or `released` disposition should surface to the requester as a synthesized JSON-RPC error, and with what code from the -32000 to -32099 implementation-defined band. |
 | Cancellation affinity | §7 leaves cancellation best-effort where a request address is served by many responder instances, since no field of this binding routes a notification to the instance holding the request. Whether the binding should supply an affinity mechanism, or an address a responder publishes for messages concerning a request in progress, is open. |
 | Multi-message response signalling | §4.2 reads terminality from the body and adds no `properties` field for it. Review raised two candidates for the case where an application protocol answers one request with several messages. A `group-id` shared by those messages would let a container that pins a group to one consumer keep them together, giving a multi-message answer affinity. An explicit end-of-response marker would let a requester recognize the last message without parsing the body. Either moves work into `properties` at the cost of a field the binding does not currently require, and an end marker would need to say how it rides alongside the final response. |
-| Reply-path authorization | §8 scopes the problem. The cross-address-space case has no answer here. |
+| Reply-path authorization | §9 scopes the problem. The cross-address-space case has no answer here. |
 | Reply delivery across address spaces | §5 cites [AMQP-ADDR] §3.2.3 for a `reply-to` carrying a network endpoint. That clause requires (SHOULD) delivery over the connection the request arrived on and an outbound connection to the endpoint only on failure, but does not say what a responder does when the endpoint names a container other than the one the request arrived through: whether a paired-link handshake to that container's `$me`, delivery annotations carrying a return path, or something else applies. Whether this binding should say more than [AMQP-ADDR] does for that case is open. |
 
 ## Appendix C  Revision History (Informative)

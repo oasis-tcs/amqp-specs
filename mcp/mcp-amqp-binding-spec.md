@@ -45,7 +45,7 @@ already provides.
 
 ## 2  Definitions
 
-This binding specification uses the terms defined in [JSONRPC-AMQP] §2.
+This binding specification uses the terms defined in [JSONRPC-AMQP].
 
 - **Client** -- The Client sends JSON-RPC requests and notifications, as defined by [MCP]. It is the
   Requester of [JSONRPC-AMQP].
@@ -107,21 +107,14 @@ that issued the request, with no shared state at the intermediary.
 
 ## 6  Cancellation
 
-Unlike stdio and Streamable HTTP, AMQP does not cancel a request when a connection fails. If a
-Client's Reply Link is lost and the Reply Address remains, the Client may recreate the link and
-continue to receive responses and notifications from the Server.
-
-A Client MUST limit how long it waits for the response to every request that it sends, and MUST
-cancel the request once that time is exceeded. A Client cancels a request by sending
-`notifications/cancelled`, with `requestId` set to the request's `id`, on its Request Link [MCP]. A
-Client may send a new request to retry. When multiple Server instances compete for messages on a
-Request Address, the intermediary may deliver a `notifications/cancelled` to an instance other than
-the one processing the request, so cancellation is best-effort.
+Unlike stdio and Streamable HTTP, AMQP does not cancel a request when a connection fails, so a
+Client limits how long it waits for the response to each request [JSONRPC-AMQP]. Once that time is
+exceeded, a Client MUST cancel the request by sending `notifications/cancelled`, with `requestId`
+set to the request's `id` [MCP].
 
 A Server MUST limit how long it keeps a subscription stream open. Once that time is exceeded, it
 MUST end the stream, and SHOULD do so by sending the response to the `subscriptions/listen` request,
-a result with `resultType` set to `complete`, to the request's Reply Address. If a Server cannot
-deliver to a request's Reply Address, it SHOULD stop processing the request.
+a result with `resultType` set to `complete`, to the request's Reply Address.
 
 ## 7  Ordering
 

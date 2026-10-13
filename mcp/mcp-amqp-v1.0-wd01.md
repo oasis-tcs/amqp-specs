@@ -194,10 +194,10 @@ Client that issued the request. The intermediary does not keep any shared state.
 
 ## 8 Cancellation
 
-Unlike stdio and Streamable HTTP, AMQP does not cancel a request when a connection fails, so a
-Client limits how long it waits for the response to each request [JSONRPC-AMQP]. Once that time is
-exceeded, a Client MUST cancel the request by sending `notifications/cancelled`, with `requestId`
-set to the request's `id` [MCP].
+Unlike stdio and Streamable HTTP, AMQP does not define a connection failure as cancelling a
+request, so a Client limits how long it waits for the response to each request [JSONRPC-AMQP]. Once
+that time has elapsed, a Client MUST cancel the request by sending `notifications/cancelled`, with
+`requestId` set to the request's `id` [MCP].
 
 A Server MUST limit how long it keeps a subscription stream open. Once that time has elapsed, it
 MUST end the stream, and SHOULD do so by sending the response to the `subscriptions/listen` request,

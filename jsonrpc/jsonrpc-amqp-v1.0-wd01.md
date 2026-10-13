@@ -312,12 +312,12 @@ responder learns that it cannot deliver to a request's reply address, it SHOULD 
 request.
 
 Where an application protocol defines cancellation, a requester cancels a request by sending a
-notification on the request link that names the request (§6.3). This binding does not attach a
-meaning to the notification. When many responder instances serve a request address, the
-notification may reach an instance other than the one processing the request, because a
-requester-sent notification does not carry a `correlation-id` (§6.2). Cancellation is therefore
-best-effort. An application protocol that needs stronger delivery supplies its own affinity
-mechanism; Appendix 4 records the question.
+notification on the request link that identifies the request (§6.3). This binding does not define a
+meaning for the notification. When many responder instances serve a request address, an
+intermediary can deliver the notification to an instance other than the one processing the request,
+because a requester-sent notification does not contain a `correlation-id` (§6.2). Cancellation is
+therefore best-effort. An application protocol that needs stronger delivery defines its own affinity
+mechanism; Appendix 4 lists the question.
 
 ## 10 Application Protocols
 

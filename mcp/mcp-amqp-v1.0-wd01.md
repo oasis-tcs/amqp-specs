@@ -93,9 +93,9 @@ A separate binding specification for JSON-RPC 2.0 on AMQP 1.0 [JSONRPC-AMQP] def
 a JSON-RPC message on AMQP and the correlation of a response with its request. This binding
 specification applies that binding and defines only what MCP adds to it.
 
-This binding specification does not address flow control and link credit, settlement policy,
-addressing conventions, error taxonomy, and security beyond the SASL and TLS mechanisms AMQP already
-defines.
+This binding specification deliberately does not address flow control and link credit, settlement
+policy, addressing conventions, error taxonomy, and security beyond the SASL and TLS mechanisms AMQP
+already defines.
 
 This binding specification applies only to MCP version 2026-07-28.
 
@@ -130,7 +130,7 @@ The Model Context Protocol (MCP) is an open protocol for connecting LLM applicat
 tools and data sources. As of version 2026-07-28 it uses JSON-RPC 2.0 [JSON-RPC] and is stateless.
 MCP currently defines two transports: stdio and Streamable HTTP.
 
-MCP's transports today define a direct, Client-initiated connection. Over AMQP, MCP Clients and
+MCP's transports today require a direct, Client-initiated connection. Over AMQP, MCP Clients and
 Servers can use the brokered and routed topologies that production messaging deployments already
 use, including paths that cross network boundaries and paths on which many Clients share one
 connection. Any Server instance can serve any request, so a node with competing consumers behind a
@@ -188,15 +188,15 @@ the stream stays open [JSONRPC-AMQP].
 ## 7 Link Topology
 
 A Client sends messages to a Request Address and receives messages on its Reply Address. Many
-Clients may share a node backing the Request Address, and many Server instances may serve it: using
-the per-request correlation [JSONRPC-AMQP] defines, a Server returns each response to the Client
-that issued the request, and the intermediary does not keep any shared state.
+Clients may share a node backing the Request Address, and many Server instances may serve that node.
+A Server uses the per-request correlation [JSONRPC-AMQP] defines to return each response to the
+Client that issued the request. The intermediary does not keep any shared state.
 
 ## 8 Cancellation
 
-Unlike stdio and Streamable HTTP, AMQP does not define a connection failure as cancelling a
-request. If a Client's Reply Link is lost and the Reply Address remains, the Client may recreate the
-link and continue to receive responses and notifications from the Server.
+Unlike Streamable HTTP, AMQP does not define a connection failure as cancelling a request. If a
+Client's Reply Link is lost and the Reply Address remains, the Client may recreate the link and
+continue to receive responses and notifications from the Server.
 
 A Client MUST limit how long it waits for the response to every request that it sends, and MUST
 cancel the request once that time has elapsed. A Client cancels a request by sending
@@ -213,10 +213,10 @@ deliver to a request's Reply Address, it SHOULD stop processing the request.
 ## 9 Ordering
 
 [MCP] requires a Server to send `notifications/subscriptions/acknowledged` as the first message on a
-`subscriptions/listen` stream, and not to send any notification on the stream before it. An AMQP
-receiver on a link receives messages in the order the sender sent them, so a Server MUST send all of
-its messages for a request on one Reply Link, in the order [MCP] requires. An intermediary may still
-deliver them to the Client in a different order [JSONRPC-AMQP].
+`subscriptions/listen` stream, and not to send any notification on the stream before it. AMQP
+specifies ordered delivery of messages within a link, so a Server MUST send all of its messages for
+a request on one Reply Link, in the order [MCP] requires. An intermediary may still deliver them to
+the Client in a different order [JSONRPC-AMQP].
 
 ## 10 Safety, Security, and Data Protection Considerations
 
@@ -365,7 +365,7 @@ does not designate a work product editor.
 
 ### Revision History
 
-Newest first. One line per revision; the commit messages for this file contain the detail.
+Newest first. One line per revision; the commit history of this file contains the detail.
 
 Table I. Revision History
 

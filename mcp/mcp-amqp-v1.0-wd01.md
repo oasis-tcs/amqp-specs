@@ -246,8 +246,8 @@ A Server conforms to this binding if it:
 1. satisfies the responding-container conformance requirements of [JSONRPC-AMQP];
 2. uses the request's Reply Address and `message-id` to address and correlate the messages it
    sends in answer to that request, for the message patterns specified in §6;
-3. follows the subscription lifetime and completion requirements and recommendations, and the
-   failed-delivery recommendation, specified in §8;
+3. follows the subscription lifetime and completion requirements and recommendations specified
+   in §8;
 4. sends all messages for a request on one Reply Link, in the order [MCP] requires, as specified
    in §9.
 
@@ -330,8 +330,8 @@ provide context and are not required to implement this binding.
   [Online]. Available: <https://www.jsonrpc.org/specification>.
 - **[JSONRPC-AMQP]** *JSON-RPC 2.0 over AMQP 1.0 -- Binding Specification Version 1.0*, OASIS
   Advanced Message Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026, repository
-  commit `3f7278f0466119cec549438c9e088c17e1be6da0`. [Online]. Available:
-  <https://github.com/oasis-tcs/amqp-specs/blob/3f7278f0466119cec549438c9e088c17e1be6da0/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
+  commit `430e621db2fa3f10790ed83a340d64dd0de355f5`. [Online]. Available:
+  <https://github.com/oasis-tcs/amqp-specs/blob/430e621db2fa3f10790ed83a340d64dd0de355f5/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
 - **[RFC2119]** S. Bradner, *Key Words for Use in RFCs to Indicate Requirement Levels*, BCP 14,
   RFC 2119, March 1997. [Online]. Available: <https://www.rfc-editor.org/info/rfc2119>.
 - **[RFC8174]** B. Leiba, *Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words*, BCP 14,

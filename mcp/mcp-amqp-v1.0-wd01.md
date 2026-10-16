@@ -329,15 +329,14 @@ provide context and are not required to implement this binding.
 - **[JSON-RPC]** *JSON-RPC 2.0 Specification*, 26 March 2010, revised 04 January 2013.
   [Online]. Available: <https://www.jsonrpc.org/specification>.
 - **[JSONRPC-AMQP]** *JSON-RPC 2.0 over AMQP 1.0 -- Binding Specification Version 1.0*, OASIS
-  Advanced Message Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026, repository
-  commit `430e621db2fa3f10790ed83a340d64dd0de355f5`. [Online]. Available:
-  <https://github.com/oasis-tcs/amqp-specs/blob/430e621db2fa3f10790ed83a340d64dd0de355f5/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
+  Advanced Message Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026. [Online]. Available:
+  <https://github.com/oasis-tcs/amqp-specs/blob/master/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
 - **[RFC2119]** S. Bradner, *Key Words for Use in RFCs to Indicate Requirement Levels*, BCP 14,
   RFC 2119, March 1997. [Online]. Available: <https://www.rfc-editor.org/info/rfc2119>.
 - **[RFC8174]** B. Leiba, *Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words*, BCP 14,
   RFC 8174, May 2017. [Online]. Available: <https://www.rfc-editor.org/info/rfc8174>.
 
-The [JSONRPC-AMQP] reference identifies the exact companion Working Draft used here. Its update
+The [JSONRPC-AMQP] reference identifies the companion Working Draft used here. Its update
 to the approved CSD01 publication must be identified in the approval motion and coordinated with
 OASIS Administration; this draft does not assert that the companion has already been approved.
 

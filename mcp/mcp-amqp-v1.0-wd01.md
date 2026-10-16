@@ -101,7 +101,7 @@ This binding specification applies only to MCP version 2026-07-28.
 
 ## 2 Definitions
 
-This binding specification uses the terms defined in [JSONRPC-AMQP] §2.
+This binding specification uses the terms defined in [JSONRPC-AMQP].
 
 - **Client** -- The Client sends JSON-RPC requests and notifications, as defined by [MCP]. It is the
   Requester of [JSONRPC-AMQP].
@@ -194,21 +194,14 @@ Client that issued the request. The intermediary does not keep any shared state.
 
 ## 8 Cancellation
 
-Unlike Streamable HTTP, AMQP does not define a connection failure as cancelling a request. If a
-Client's Reply Link is lost and the Reply Address remains, the Client may recreate the link and
-continue to receive responses and notifications from the Server.
-
-A Client MUST limit how long it waits for the response to every request that it sends, and MUST
-cancel the request once that time has elapsed. A Client cancels a request by sending
-`notifications/cancelled`, with `requestId` set to the request's `id`, on its Request Link [MCP]. A
-Client may send a new request to retry. When multiple Server instances compete for messages on a
-Request Address, the intermediary may deliver a `notifications/cancelled` to an instance other than
-the one processing the request, so cancellation is best-effort.
+Unlike Streamable HTTP, AMQP does not define a connection failure as cancelling a request, so a
+Client limits how long it waits for the response to each request [JSONRPC-AMQP]. Once that time has
+elapsed, a Client MUST cancel the request by sending `notifications/cancelled`, with `requestId` set
+to the request's `id` [MCP].
 
 A Server MUST limit how long it keeps a subscription stream open. Once that time has elapsed, it
 MUST end the stream, and SHOULD do so by sending the response to the `subscriptions/listen` request,
-a result with `resultType` set to `complete`, to the request's Reply Address. If a Server cannot
-deliver to a request's Reply Address, it SHOULD stop processing the request.
+a result with `resultType` set to `complete`, to the request's Reply Address.
 
 ## 9 Ordering
 
@@ -253,8 +246,8 @@ A Server conforms to this binding if it:
 1. satisfies the responding-container conformance requirements of [JSONRPC-AMQP];
 2. uses the request's Reply Address and `message-id` to address and correlate the messages it
    sends in answer to that request, for the message patterns specified in §6;
-3. follows the subscription lifetime and completion requirements and recommendations, and the
-   failed-delivery recommendation, specified in §8;
+3. follows the subscription lifetime and completion requirements and recommendations specified
+   in §8;
 4. sends all messages for a request on one Reply Link, in the order [MCP] requires, as specified
    in §9.
 
@@ -336,15 +329,14 @@ provide context and are not required to implement this binding.
 - **[JSON-RPC]** *JSON-RPC 2.0 Specification*, 26 March 2010, revised 04 January 2013.
   [Online]. Available: <https://www.jsonrpc.org/specification>.
 - **[JSONRPC-AMQP]** *JSON-RPC 2.0 over AMQP 1.0 -- Binding Specification Version 1.0*, OASIS
-  Advanced Message Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026, repository
-  commit `3f7278f0466119cec549438c9e088c17e1be6da0`. [Online]. Available:
-  <https://github.com/oasis-tcs/amqp-specs/blob/3f7278f0466119cec549438c9e088c17e1be6da0/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
+  Advanced Message Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026. [Online]. Available:
+  <https://github.com/oasis-tcs/amqp-specs/blob/master/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
 - **[RFC2119]** S. Bradner, *Key Words for Use in RFCs to Indicate Requirement Levels*, BCP 14,
   RFC 2119, March 1997. [Online]. Available: <https://www.rfc-editor.org/info/rfc2119>.
 - **[RFC8174]** B. Leiba, *Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words*, BCP 14,
   RFC 8174, May 2017. [Online]. Available: <https://www.rfc-editor.org/info/rfc8174>.
 
-The [JSONRPC-AMQP] reference identifies the exact companion Working Draft used here. Its update
+The [JSONRPC-AMQP] reference identifies the companion Working Draft used here. Its update
 to the approved CSD01 publication must be identified in the approval motion and coordinated with
 OASIS Administration; this draft does not assert that the companion has already been approved.
 

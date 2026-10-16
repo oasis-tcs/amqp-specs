@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Redirect non-member comments and close the issue
+      - name: Redirect non-member issues and comments
         env:
           GH_TOKEN: ${{ github.token }}
           ACTOR: ${{ github.actor }}
@@ -36,12 +36,13 @@ jobs:
             exit 0
           fi
 
-          if grep -iqFqx -- "$ACTOR" tc/members.txt; then
+          MEMBERS=$(cat tc/members.txt)
+          STAFF=$(cat tc/staff.txt)
+          if grep -iqFqx -- "$ACTOR" <<< "$MEMBERS"$'\n'"$STAFF"; then
             exit 0
           fi
 
+          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/labels" \
+            --raw-field "labels[]=public-comment-redirected"
           gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" \
             --field body="$REJECTION_MESSAGE"
-          gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" \
-            --field state=closed \
-            --field state_reason=not_planned

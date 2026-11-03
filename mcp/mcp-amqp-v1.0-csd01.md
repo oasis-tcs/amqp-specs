@@ -1,32 +1,27 @@
 # MCP over AMQP 1.0 -- Binding Specification Version 1.0
 
-## Working Draft 01
+## Committee Specification Draft 01
 
-## 08 October 2026
+## 15 October 2026
 
-Standards Track Work Product. Prepared for a ballot to approve Committee Specification Draft 01
-and authorize its first 30-day public review; neither approval nor public review has occurred.
+Standards Track Work Product. Approved as Committee Specification Draft 01 on 15 October 2026.
 
 ### This Stage
 
-Not yet published. Proposed CSD01 locations, subject to OASIS registration and confirmation:
-
-- Markdown (proposed authoritative format):
-  `https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/csd01/mcp-amqp-v1.0-csd01.md`
-- HTML: `https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/csd01/mcp-amqp-v1.0-csd01.html`
-- PDF: `https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/csd01/mcp-amqp-v1.0-csd01.pdf`
+- Markdown (authoritative format):
+  <https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/csd01/mcp-amqp-v1.0-csd01.md>
+- HTML: <https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/csd01/mcp-amqp-v1.0-csd01.html>
+- PDF: <https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/csd01/mcp-amqp-v1.0-csd01.pdf>
 
 ### Previous Stage
 
-N/A. This work product has no approved publication identified in this draft.
+N/A. This work product has no previous approved publication.
 
 ### Latest Stage
 
-Not yet published. Proposed latest-stage locations, subject to OASIS confirmation:
-
-- Markdown: `https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/mcp-amqp-v1.0.md`
-- HTML: `https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/mcp-amqp-v1.0.html`
-- PDF: `https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/mcp-amqp-v1.0.pdf`
+- Markdown: <https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/mcp-amqp-v1.0.md>
+- HTML: <https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/mcp-amqp-v1.0.html>
+- PDF: <https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/mcp-amqp-v1.0.pdf>
 
 ### Technical Committee
 
@@ -51,8 +46,8 @@ link topology, cancellation, and ordering for direct, brokered, and routed conne
 ### Citation Format
 
 **[MCP-AMQP]** *MCP over AMQP 1.0 -- Binding Specification Version 1.0*, OASIS Advanced Message
-Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026. [Online]. Available:
-[TC repository](https://github.com/oasis-tcs/amqp-specs/tree/master/mcp).
+Queuing Protocol (AMQP) TC, Committee Specification Draft 01, 15 October 2026. [Online]. Available:
+<https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/csd01/mcp-amqp-v1.0-csd01.html>.
 
 ### Related Work
 
@@ -83,7 +78,7 @@ complete status, see [Annex A](#annex-a-license-document-status-and-notices).
 - [Appendix 2 Changes From Previous Version](#appendix-2-changes-from-previous-version)
 - [Appendix 3 Example Exchange](#appendix-3-example-exchange)
 
-## 1 Scope
+## 1 Scope <a id="1-scope"></a>
 
 This binding specification defines a binding of MCP onto AMQP 1.0 [AMQP-v1.0]. It defines the
 application endpoints so MCP implementations can use any conforming AMQP 1.0 broker or router as a
@@ -99,7 +94,7 @@ already defines.
 
 This binding specification applies only to MCP version 2026-07-28.
 
-## 2 Definitions
+## 2 Definitions <a id="2-definitions"></a>
 
 This binding specification uses the terms defined in [JSONRPC-AMQP].
 
@@ -109,7 +104,7 @@ This binding specification uses the terms defined in [JSONRPC-AMQP].
   optionally preceded by notifications scoped to that request, as defined by [MCP]. It is the
   Responder of [JSONRPC-AMQP].
 
-## 3 Document Conventions
+## 3 Document Conventions <a id="3-document-conventions"></a>
 
 ### 3.1 Key Words
 
@@ -124,7 +119,7 @@ Monospace text identifies AMQP fields, MCP methods, JSON members, literal values
 identifiers. References in square brackets identify entries in Annex B. Section references
 identify sections of this document unless a referenced document is named explicitly.
 
-## 4 Introduction
+## 4 Introduction <a id="4-introduction"></a>
 
 The Model Context Protocol (MCP) is an open protocol for connecting LLM applications to external
 tools and data sources. As of version 2026-07-28 it uses JSON-RPC 2.0 [JSON-RPC] and is stateless.
@@ -140,7 +135,7 @@ single address is an ordinary MCP deployment.
 
 Changes and revision history are recorded in Appendix 2.
 
-## 5 Overview
+## 5 Overview <a id="5-overview"></a>
 
 Every MCP interaction begins with the Client [MCP]: the Client sends requests and notifications, and
 the Server answers each request with a response, optionally preceded by notifications scoped to that
@@ -154,7 +149,7 @@ on AMQP.
 
 This binding specification applies only to MCP version 2026-07-28.
 
-## 6 MCP Message Exchange
+## 6 MCP Message Exchange <a id="6-mcp-message-exchange"></a>
 
 [MCP] defines three patterns of requests, responses, and notifications: request and response, multi
 round-trip requests, and subscribe and notify. In each, the Server may send more than one message in
@@ -185,14 +180,14 @@ of notifications [MCP]. The Server sends every notification on the stream to the
 with the same `correlation-id`, and retains the request's `message-id` and `reply-to` for as long as
 the stream stays open [JSONRPC-AMQP].
 
-## 7 Link Topology
+## 7 Link Topology <a id="7-link-topology"></a>
 
 A Client sends messages to a Request Address and receives messages on its Reply Address. Many
 Clients may share a node backing the Request Address, and many Server instances may serve that node.
 A Server uses the per-request correlation [JSONRPC-AMQP] defines to return each response to the
 Client that issued the request. The intermediary does not keep any shared state.
 
-## 8 Cancellation
+## 8 Cancellation <a id="8-cancellation"></a>
 
 Unlike Streamable HTTP, AMQP does not define a connection failure as cancelling a request, so a
 Client limits how long it waits for the response to each request [JSONRPC-AMQP]. Once that time has
@@ -203,7 +198,7 @@ A Server MUST limit how long it keeps a subscription stream open. Once that time
 MUST end the stream, and SHOULD do so by sending the response to the `subscriptions/listen` request,
 a result with `resultType` set to `complete`, to the request's Reply Address.
 
-## 9 Ordering
+## 9 Ordering <a id="9-ordering"></a>
 
 [MCP] requires a Server to send `notifications/subscriptions/acknowledged` as the first message on a
 `subscriptions/listen` stream, and not to send any notification on the stream before it. AMQP
@@ -211,7 +206,7 @@ specifies ordered delivery of messages within a link, so a Server MUST send all 
 a request on one Reply Link, in the order [MCP] requires. An intermediary may still deliver them to
 the Client in a different order [JSONRPC-AMQP].
 
-## 10 Safety, Security, and Data Protection Considerations
+## 10 Safety, Security, and Data Protection Considerations <a id="10-safety-security-and-data-protection-considerations"></a>
 
 ### 10.1 Security Considerations
 
@@ -222,7 +217,7 @@ This binding specification uses the SASL and TLS mechanisms defined by [AMQP-v1.
 This binding defines no additional safety or data protection mechanism. Its security scope is
 stated in §1; application protocols and deployments determine the treatment of their payloads.
 
-## 11 Conformance
+## 11 Conformance <a id="11-conformance"></a>
 
 These numbered clauses summarize requirements already stated in this binding and in
 [JSONRPC-AMQP]. They do not introduce additional wire-protocol requirements. Requirements and
@@ -258,10 +253,9 @@ A Server conforms to this binding if it:
 ### A.1 Document Status
 
 This document was last revised by the OASIS Advanced Message Queuing Protocol (AMQP) TC on the
-above date. It is a Working Draft and has not been approved as a Committee Specification Draft.
-The product registration, publication URIs, and authoritative format remain
-subject to TC and OASIS Administration confirmation. Other technical work produced by the TC is
-listed at <https://www.oasis-open.org/committees/amqp/>.
+above date. It is Committee Specification Draft 01, approved by the TC on 15 October 2026.
+Other technical work produced by the TC is listed at
+<https://www.oasis-open.org/committees/amqp/>.
 
 TC members should send comments to the TC's general email list. Others should use the
 [TC's public comment facility](https://groups.oasis-open.org/communities/community-home?communitykey=f83ec4e4-c2ad-4e1f-b9d2-018f5aa7a390)
@@ -325,20 +319,17 @@ provide context and are not required to implement this binding.
   29 October 2012. [Online]. Available:
   <https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-complete-v1.0-os.pdf>.
 - **[MCP]** *Model Context Protocol Specification*, version 2026-07-28. [Online]. Available:
-  <https://modelcontextprotocol.io>.
+  <https://modelcontextprotocol.io/specification/2026-07-28>.
 - **[JSON-RPC]** *JSON-RPC 2.0 Specification*, 26 March 2010, revised 04 January 2013.
   [Online]. Available: <https://www.jsonrpc.org/specification>.
 - **[JSONRPC-AMQP]** *JSON-RPC 2.0 over AMQP 1.0 -- Binding Specification Version 1.0*, OASIS
-  Advanced Message Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026. [Online]. Available:
-  <https://github.com/oasis-tcs/amqp-specs/blob/master/jsonrpc/jsonrpc-amqp-v1.0-wd01.md>.
+  Advanced Message Queuing Protocol (AMQP) TC, Committee Specification Draft 01, 15 October 2026.
+  [Online]. Available:
+  <https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/csd01/jsonrpc-amqp-v1.0-csd01.html>.
 - **[RFC2119]** S. Bradner, *Key Words for Use in RFCs to Indicate Requirement Levels*, BCP 14,
   RFC 2119, March 1997. [Online]. Available: <https://www.rfc-editor.org/info/rfc2119>.
 - **[RFC8174]** B. Leiba, *Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words*, BCP 14,
   RFC 8174, May 2017. [Online]. Available: <https://www.rfc-editor.org/info/rfc8174>.
-
-The [JSONRPC-AMQP] reference identifies the companion Working Draft used here. Its update
-to the approved CSD01 publication must be identified in the approval motion and coordinated with
-OASIS Administration; this draft does not assert that the companion has already been approved.
 
 ### B.2 Informative References
 
@@ -363,8 +354,9 @@ Table I. Revision History
 
 | Date | Change |
 | ------ | -------- |
+| 2026-10-16 | Prepare Committee Specification Draft 01 for publication; correct cover metadata, publication links, contents anchors, and references; correct the 2026-09-24 history entry. Protocol requirements are unchanged. |
 | 2026-10-08 | Prepare Working Draft 01 using the OASIS Markdown master template; add cover metadata, conventions, status and notices; pin the companion JSON-RPC Working Draft; add numbered conformance clauses summarizing existing requirements; reorganize references and informative appendices. |
-| 2026-09-24 | Describe the [MCP] message patterns; add Cancellation, Ordering and Authorization; map Client and Server to the [JSONRPC-AMQP] roles; remove the Conformance section. |
+| 2026-09-24 | Describe the [MCP] message patterns; add Cancellation and Ordering; map Client and Server to the [JSONRPC-AMQP] roles; remove the Conformance section. |
 | 2026-09-17 | Correct statements about [MCP]: drop a MUST-level closing result [MCP] makes a SHOULD; leave transport termination to [JSONRPC-AMQP]; ground the two-link model on [MCP]. |
 | 2026-09-01 | Cite [JSONRPC-AMQP] as a normative reference and use its citation anchor throughout. |
 | 2026-08-24 | Layer on the JSON-RPC 2.0 over AMQP 1.0 binding, removing the framing and correlation defined here; drop the end-to-end ordering claim for subscription streams. |

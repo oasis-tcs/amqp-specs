@@ -1,32 +1,27 @@
 # JSON-RPC 2.0 over AMQP 1.0 -- Binding Specification Version 1.0
 
-## Working Draft 01
+## Committee Specification Draft 01
 
-## 08 October 2026
+## 15 October 2026
 
-Standards Track Work Product. Prepared for a ballot to approve Committee Specification Draft 01
-and authorize its first 30-day public review; neither approval nor public review has occurred.
+Standards Track Work Product. Approved as Committee Specification Draft 01 on 15 October 2026.
 
 ### This Stage
 
-Not yet published. Proposed CSD01 locations, subject to OASIS registration and confirmation:
-
-- Markdown (proposed authoritative format):
-  `https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/csd01/jsonrpc-amqp-v1.0-csd01.md`
-- HTML: `https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/csd01/jsonrpc-amqp-v1.0-csd01.html`
-- PDF: `https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/csd01/jsonrpc-amqp-v1.0-csd01.pdf`
+- Markdown (authoritative format):
+  <https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/csd01/jsonrpc-amqp-v1.0-csd01.md>
+- HTML: <https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/csd01/jsonrpc-amqp-v1.0-csd01.html>
+- PDF: <https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/csd01/jsonrpc-amqp-v1.0-csd01.pdf>
 
 ### Previous Stage
 
-N/A. This work product has no approved publication identified in this draft.
+N/A. This work product has no previous approved publication.
 
 ### Latest Stage
 
-Not yet published. Proposed latest-stage locations, subject to OASIS confirmation:
-
-- Markdown: `https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/jsonrpc-amqp-v1.0.md`
-- HTML: `https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/jsonrpc-amqp-v1.0.html`
-- PDF: `https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/jsonrpc-amqp-v1.0.pdf`
+- Markdown: <https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/jsonrpc-amqp-v1.0.md>
+- HTML: <https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/jsonrpc-amqp-v1.0.html>
+- PDF: <https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/jsonrpc-amqp-v1.0.pdf>
 
 ### Technical Committee
 
@@ -51,8 +46,9 @@ direct connections and to connections through intermediaries.
 ### Citation Format
 
 **[JSONRPC-AMQP]** *JSON-RPC 2.0 over AMQP 1.0 -- Binding Specification Version 1.0*, OASIS
-Advanced Message Queuing Protocol (AMQP) TC, Working Draft 01, 08 October 2026. [Online]. Available:
-[TC repository](https://github.com/oasis-tcs/amqp-specs/tree/master/jsonrpc).
+Advanced Message Queuing Protocol (AMQP) TC, Committee Specification Draft 01, 15 October 2026.
+[Online]. Available:
+<https://docs.oasis-open.org/amqp/jsonrpc-amqp/v1.0/csd01/jsonrpc-amqp-v1.0-csd01.html>.
 
 ### Related Work
 
@@ -85,7 +81,7 @@ complete status, see [Annex A](#annex-a-license-document-status-and-notices).
 - [Appendix 3 Example Message Flow](#appendix-3-example-message-flow)
 - [Appendix 4 Open Questions](#appendix-4-open-questions)
 
-## 1 Scope
+## 1 Scope <a id="1-scope"></a>
 
 This specification defines a binding of JSON-RPC 2.0 onto AMQP 1.0 [AMQP-v1.0].
 
@@ -95,7 +91,7 @@ SASL and TLS mechanisms AMQP already provides. The peers decide settlement polic
 specifies `message-id` as a deduplication key. This specification does not define how a requester
 learns that a request went unanswered; Appendix 4 lists this as open.
 
-## 2 Definitions
+## 2 Definitions <a id="2-definitions"></a>
 
 - **JSON-RPC message** -- Any one of the three forms [JSON-RPC] defines for the wire: a request
   object, a response object, or a batch of either.
@@ -111,7 +107,7 @@ learns that a request went unanswered; Appendix 4 lists this as open.
 - **Reply address** -- The AMQP address to which a responder sends each message in answer to a
   request.
 
-## 3 Document Conventions
+## 3 Document Conventions <a id="3-document-conventions"></a>
 
 ### 3.1 Key Words
 
@@ -126,7 +122,7 @@ Monospace text identifies AMQP fields, JSON members, literal values, and protoco
 References in square brackets identify entries in Annex B. Section references identify sections
 of this document unless a referenced document is named explicitly.
 
-## 4 Introduction
+## 4 Introduction <a id="4-introduction"></a>
 
 JSON-RPC 2.0 [JSON-RPC] is a stateless remote procedure call protocol. It defines request, response,
 and notification objects, a batch form, its own correlation identifier, and its own error taxonomy.
@@ -140,7 +136,7 @@ conform to this binding interoperate.
 
 Changes and revision history are recorded in Appendix 2.
 
-## 5 Overview
+## 5 Overview <a id="5-overview"></a>
 
 JSON-RPC traffic runs in two directions. A requester sends requests and notifications to the
 responder on a request link. A responder sends responses and notifications to the requester on a
@@ -151,7 +147,7 @@ message (§6.2). A requester uses one reply address for however many requests it
 uses the same two links whether it attaches directly to a responder or to an intermediary where many
 requesters share a request address (§7).
 
-## 6 Message Mapping
+## 6 Message Mapping <a id="6-message-mapping"></a>
 
 ### 6.1 Body
 
@@ -231,7 +227,7 @@ that assembled it MAY issue its members as individual messages, each its own AMQ
 own `message-id`. A single oversize request or notification cannot be divided this way: it is one
 JSON-RPC message (§6.1).
 
-## 7 Addressing and Topology
+## 7 Addressing and Topology <a id="7-addressing-and-topology"></a>
 
 Every address in this binding is an AMQP address as [AMQP-ADDR] defines it, and is opaque to this
 binding: this binding does not use any element of [AMQP-ADDR] beyond a `reply-to` that contains an
@@ -295,7 +291,7 @@ assigned to a temporary node survives the reply link's closure or a connection i
 when the requested lifetime policy is honored, replies sent after the node is deleted cannot reach
 the requester through that address.
 
-## 8 Delivery
+## 8 Delivery <a id="8-delivery"></a>
 
 **Duplicates.** [JSON-RPC] does not define idempotency or deduplication. A responder that needs to
 recognize a redelivered request SHOULD check for a repeated `message-id` (§6.2).
@@ -305,7 +301,7 @@ intermediary preserves beyond one hop is that intermediary's property. Where an 
 protocol defines several messages in answer to one request (§6.2), a responder controls only the
 order in which it sends them.
 
-## 9 Cancellation
+## 9 Cancellation <a id="9-cancellation"></a>
 
 A requester MUST limit how long it waits for the response to every request that it sends. If a
 responder learns that it cannot deliver to a request's reply address, it SHOULD stop processing the
@@ -319,13 +315,13 @@ because a requester-sent notification does not contain a `correlation-id` (§6.2
 therefore best-effort. An application protocol that needs stronger delivery defines its own affinity
 mechanism; Appendix 4 lists the question.
 
-## 10 Application Protocols
+## 10 Application Protocols <a id="10-application-protocols"></a>
 
 An application protocol defines its own routing metadata as `application-properties` keys. Such
 keys are advisory: an endpoint reads the JSON-RPC body as authoritative, and the keys exist so
 intermediaries can route, filter, and meter without decoding it.
 
-## 11 Safety, Security, and Data Protection Considerations
+## 11 Safety, Security, and Data Protection Considerations <a id="11-safety-security-and-data-protection-considerations"></a>
 
 ### 11.1 Security Considerations
 
@@ -358,7 +354,7 @@ authorization decision MUST NOT be taken on `subject`. The same holds for the
 This binding defines no additional safety or data protection mechanism. Its security scope is
 stated in §1; application protocols and deployments determine the treatment of their payloads.
 
-## 12 Conformance
+## 12 Conformance <a id="12-conformance"></a>
 
 A **requesting container** conforms to this binding if it:
 
@@ -387,10 +383,9 @@ unanswered (§1).
 ### A.1 Document Status
 
 This document was last revised by the OASIS Advanced Message Queuing Protocol (AMQP) TC on the
-above date. It is a Working Draft and has not been approved as a Committee Specification Draft.
-The product registration, publication URIs, and authoritative format remain
-subject to TC and OASIS Administration confirmation. Other technical work produced by the TC is
-listed at <https://www.oasis-open.org/committees/amqp/>.
+above date. It is Committee Specification Draft 01, approved by the TC on 15 October 2026.
+Other technical work produced by the TC is listed at
+<https://www.oasis-open.org/committees/amqp/>.
 
 TC members should send comments to the TC's general email list. Others should use the
 [TC's public comment facility](https://groups.oasis-open.org/communities/community-home?communitykey=f83ec4e4-c2ad-4e1f-b9d2-018f5aa7a390)
@@ -471,8 +466,9 @@ provide context and are not required to implement this binding.
   Committee, Working Draft 10, 21 August 2020. [Online]. Available:
   <https://groups.oasis-open.org/higherlogic/ws/public/download/67638/amqp-bindmap-jms-v1.0-wd10.pdf>.
 - **[MCP-AMQP]** *MCP over AMQP 1.0 -- Binding Specification Version 1.0*, OASIS Advanced
-  Message Queuing Protocol (AMQP) TC, working draft. [Online]. Available:
-  <https://github.com/oasis-tcs/amqp-specs/tree/master/mcp>.
+  Message Queuing Protocol (AMQP) TC, Committee Specification Draft 01, 15 October 2026.
+  [Online]. Available:
+  <https://docs.oasis-open.org/amqp/mcp-amqp/v1.0/csd01/mcp-amqp-v1.0-csd01.html>.
 
 ## Appendix 1 Acknowledgments
 
@@ -493,6 +489,7 @@ Table II. Revision History
 
 | Date | Change |
 | ------ | -------- |
+| 2026-10-16 | Prepare Committee Specification Draft 01 for publication; correct cover metadata, publication links, contents anchors, and references. Protocol requirements are unchanged. |
 | 2026-10-08 | Prepare Working Draft 01 using the OASIS Markdown master template; add cover metadata, conventions, status and notices; reorganize references and informative appendices; renumber sections and update internal references. Protocol requirements are unchanged. |
 | 2026-09-25 | Add non-normative guidance for receiver-created temporary queue reply nodes. |
 | 2026-09-17 | Correct statements attributed to [JSON-RPC], [AMQP-v1.0] and [RFC8259] that those specifications do not make; resolve the contradictions on `message-id` reuse and on `correlation-id` presence; require UTF-8 in §6.1 rather than through a `content-type` parameter [RFC8259] declines to define; and remove justification from the normative sections. |

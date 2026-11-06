@@ -303,9 +303,9 @@ order in which it sends them.
 
 ## 9 Cancellation <a id="9-cancellation"></a>
 
-A requester MUST limit how long it waits for the response to every request that it sends. If a
-responder learns that it cannot deliver to a request's reply address, it SHOULD stop processing the
-request.
+A requester MUST limit how long it waits for the response to every request that it sends. A
+requester SHOULD set the `ttl` field of each request's `header` section to no more than that limit.
+If a responder cannot deliver to a request's reply address, it SHOULD stop processing the request.
 
 Where an application protocol defines cancellation, a requester cancels a request by sending a
 notification on the request link that identifies the request (§6.3). This binding does not define a

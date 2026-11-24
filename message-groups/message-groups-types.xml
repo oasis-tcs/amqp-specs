@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AMQP Message Groups Version 1.0
+  Working Draft 01, 24 November 2026. Unapproved contribution.
+  Copyright OASIS Open 2026. All Rights Reserved.
+  License and document status: message-groups-v1.0-wd01.md, Annex A.
+  Core field types are defined by AMQP 1.0 Types, Transport, and Messaging.
+-->
+<amqp name="message-groups" label="AMQP Message Groups">
+  <section name="group-types" title="Group Types">
+<type name="group-settings" class="composite" source="list">
+  <descriptor name="amqp:group-settings-v1:list"/>
+  <field name="grouped-only" type="boolean" default="false"/>
+  <field name="max-assignments" type="uint"/>
+</type>
+
+<type name="group-control" class="composite" source="list">
+  <descriptor name="amqp:group-control-v1:list"/>
+  <field name="kind" type="symbol" mandatory="true"/>
+  <field name="request-number" type="ulong"/>
+  <field name="operation" type="symbol"/>
+  <field name="group-id" type="string"/>
+  <field name="assignment-id" type="uuid"/>
+  <field name="status" type="symbol"/>
+  <field name="error" type="error"/>
+  <field name="assignments" type="list"/>
+  <field name="wait" type="seconds"/>
+  <field name="start-paused" type="boolean"/>
+  <field name="takeover" type="boolean" default="false"/>
+  <field name="handover-id" type="uuid"/>
+</type>
+
+<type name="group-assignment" class="composite" source="list">
+  <descriptor name="amqp:group-assignment-v1:list"/>
+  <field name="group-id" type="string" mandatory="true"/>
+  <field name="assignment-id" type="uuid" mandatory="true"/>
+</type>
+
+<type name="group-sequence-info" class="composite" source="list">
+  <descriptor name="amqp:group-sequence-info-v1:list"/>
+  <field name="sequence-id" type="uuid" mandatory="true"/>
+  <field name="final" type="boolean" default="false"/>
+</type>
+  </section>
+</amqp>
